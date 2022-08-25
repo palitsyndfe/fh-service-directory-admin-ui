@@ -97,7 +97,7 @@ public class CheckServiceDetailsModel : PageModel
             if (organisationViewModel != null)
             {
                 string result = string.Empty;
-                OpenReferralOrganisationWithServicesDto openReferralOrganisationWithServicesDto = await _viewModelToApiModelHelper.GetOrganisation(organisationViewModel);
+                IOpenReferralOrganisationWithServicesDto openReferralOrganisationWithServicesDto = await _viewModelToApiModelHelper.GetOrganisation(organisationViewModel);
                 if (openReferralOrganisationWithServicesDto != null)
                 {
                     var service = openReferralOrganisationWithServicesDto?.Services?.FirstOrDefault();

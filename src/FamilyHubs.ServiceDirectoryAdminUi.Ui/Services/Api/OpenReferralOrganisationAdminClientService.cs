@@ -12,8 +12,8 @@ public interface IOpenReferralOrganisationAdminClientService
     Task<PaginatedList<OpenReferralTaxonomyDto>> GetTaxonomyList(int pageNumber = 1, int pageSize = 10);
     Task<List<OpenReferralOrganisationDto>> GetListOpenReferralOrganisations();
     Task<OpenReferralOrganisationWithServicesDto> GetOpenReferralOrganisationById(string id);
-    Task<string> CreateOrganisation(OpenReferralOrganisationWithServicesDto organisation);
-    Task<string> UpdateOrganisation(OpenReferralOrganisationWithServicesDto organisation);
+    Task<string> CreateOrganisation(IOpenReferralOrganisationWithServicesDto organisation);
+    Task<string> UpdateOrganisation(IOpenReferralOrganisationWithServicesDto organisation);
 }
 
 public class OpenReferralOrganisationAdminClientService : ApiService, IOpenReferralOrganisationAdminClientService
@@ -82,7 +82,7 @@ public class OpenReferralOrganisationAdminClientService : ApiService, IOpenRefer
             );
     }
 
-    public async Task<string> CreateOrganisation(OpenReferralOrganisationWithServicesDto organisation)
+    public async Task<string> CreateOrganisation(IOpenReferralOrganisationWithServicesDto organisation)
     {
         var request = new HttpRequestMessage
         {
@@ -99,7 +99,7 @@ public class OpenReferralOrganisationAdminClientService : ApiService, IOpenRefer
         return stringResult;
     }
 
-    public async Task<string> UpdateOrganisation(OpenReferralOrganisationWithServicesDto organisation)
+    public async Task<string> UpdateOrganisation(IOpenReferralOrganisationWithServicesDto organisation)
     {
         var request = new HttpRequestMessage
         {

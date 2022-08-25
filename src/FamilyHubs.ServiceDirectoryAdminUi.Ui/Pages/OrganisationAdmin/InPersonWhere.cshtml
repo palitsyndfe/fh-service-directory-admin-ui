@@ -21,7 +21,7 @@
           </div>
           <div class="govuk-checkboxes" data-module="govuk-checkboxes">
             <div class="govuk-checkboxes__item">
-              <input class="govuk-checkboxes__input" id="InPersonSelection" name="InPersonSelection" type="checkbox" value="Our own location" data-aria-controls="conditional-address" @(Model.InPersonSelection != null && Model.InPersonSelection.Any(x=>x=="Our own location") ? "data-conditional-active" : "")>
+              <input class="govuk-checkboxes__input" id="InPersonSelection" name="InPersonSelection" type="checkbox" value="Our own location" data-aria-controls="conditional-address" @(Model.InPersonSelection != null && Model.InPersonSelection.Any(x=>x=="Our own location") ? "data-conditional-active" : string.Empty)>
               <label class="govuk-label govuk-checkboxes__label" for="InPersonSelection">
                 Our own location
               </label>

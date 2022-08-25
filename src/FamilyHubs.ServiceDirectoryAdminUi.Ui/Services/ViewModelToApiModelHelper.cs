@@ -1,4 +1,5 @@
-﻿using FamilyHubs.ServiceDirectory.Shared.Enums;
+﻿using FamilyHubs.ServiceDirectory.Shared.Builders;
+using FamilyHubs.ServiceDirectory.Shared.Enums;
 using FamilyHubs.ServiceDirectory.Shared.Models.Api.OpenReferralContacts;
 using FamilyHubs.ServiceDirectory.Shared.Models.Api.OpenReferralCostOptions;
 using FamilyHubs.ServiceDirectory.Shared.Models.Api.OpenReferralEligibilitys;
@@ -21,7 +22,7 @@ namespace FamilyHubs.ServiceDirectoryAdminUi.Ui.Services;
 
 public interface IViewModelToApiModelHelper
 {
-    Task<OpenReferralOrganisationWithServicesDto> GetOrganisation(OrganisationViewModel viewModel);
+    Task<IOpenReferralOrganisationWithServicesDto> GetOrganisation(OrganisationViewModel viewModel);
 }
 
 public class ViewModelToApiModelHelper : IViewModelToApiModelHelper
@@ -36,21 +37,34 @@ public class ViewModelToApiModelHelper : IViewModelToApiModelHelper
     // **** TODO: Refactor to use the Builder Pattern
     // **** https://www.dofactory.com/net/builder-design-pattern
     //----------------------------------------------------------
-    public async Task<OpenReferralOrganisationWithServicesDto> GetOrganisation(OrganisationViewModel viewModel)
+    public async Task<IOpenReferralOrganisationWithServicesDto> GetOrganisation(OrganisationViewModel viewModel)
     {
-        var contactId = Guid.NewGuid().ToString();
-
-        var organisation = new OpenReferralOrganisationWithServicesDto(
+        OrganisationDtoBuilder builder = new();
+        IOpenReferralOrganisationWithServicesDto organisation = builder.WithMainProperties(
             viewModel.Id.ToString(),
             viewModel.Name,
             viewModel.Description,
             viewModel.Logo,
             new Uri(viewModel.Url ?? string.Empty).ToString(),
-            viewModel.Url,
-            new List<OpenReferralServiceDto>()
-        {
-            new OpenReferralServiceDto(
-                viewModel.ServiceId ?? Guid.NewGuid().ToString(),
+            viewModel.Url
+            )
+            .WithServices(
+            new List<IOpenReferralServiceDto>
+            {
+                await GetService(viewModel)
+            }
+            )
+            .Build();
+
+        return organisation;
+    }
+
+    private async Task<IOpenReferralServiceDto> GetService(OrganisationViewModel viewModel)
+    {
+        var contactId = Guid.NewGuid().ToString();
+
+        ServicesDtoBuilder builder = new ServicesDtoBuilder();
+        IOpenReferralServiceDto service = builder.WithMainProperties(viewModel.ServiceId ?? Guid.NewGuid().ToString(),
                 viewModel.ServiceName ?? string.Empty,
                 viewModel.ServiceDescription,
                 null,
@@ -61,65 +75,66 @@ public class ViewModelToApiModelHelper : IViewModelToApiModelHelper
                 "pending",
                 viewModel.Website,
                 viewModel.Email,
-                null,
-                GetDeliveryTypes(viewModel.ServiceDeliverySelection),
-                GetEligibilities("Children", viewModel.MinAge ?? 0, viewModel.MaxAge ?? 0),
-                new List<IOpenReferralContactDto>()
-                {
-                    new OpenReferralContactDto(
-                        contactId,
-                        "Service",
-                        string.Empty,
-                        new List<IOpenReferralPhoneDto>()
-                        {
-                            new OpenReferralPhoneDto(contactId, viewModel.Telephone ?? string.Empty)
-                        }
-                        )
-                },
-                GetCost(viewModel.IsPayedFor == "Yes", viewModel.PayUnit ?? string.Empty, viewModel.Cost),
-                GetLanguages(viewModel.Languages)
-                , new List<IOpenReferralServiceAreaDto>()
-                {
-                    new OpenReferralServiceAreaDto(Guid.NewGuid().ToString(), "Local", null, "http://statistics.data.gov.uk/id/statistical-geography/K02000001")
+                null)
+            .WithServiceDelivery(GetDeliveryTypes(viewModel.ServiceDeliverySelection))
+            .WithEligibility(GetEligibilities("Children", viewModel.MinAge ?? 0, viewModel.MaxAge ?? 0))
+            .WithContact(new List<IOpenReferralContactDto>()
+            {
+                new OpenReferralContactDto(
+                    contactId,
+                    "Service",
+                    string.Empty,
+                    new List<IOpenReferralPhoneDto>()
+                    {
+                        new OpenReferralPhoneDto(contactId, viewModel.Telephone ?? string.Empty)
+                    }
+                    )
+            })
+            .WithCostOption(GetCost(viewModel.IsPayedFor == "Yes", viewModel.PayUnit ?? string.Empty, viewModel.Cost))
+            .WithLanguages(GetLanguages(viewModel.Languages))
+            .WithServiceAreas(new List<IOpenReferralServiceAreaDto>()
+            {
+                new OpenReferralServiceAreaDto(Guid.NewGuid().ToString(), "Local", null, "http://statistics.data.gov.uk/id/statistical-geography/K02000001")
 
-                }
-                , new List<OpenReferralServiceAtLocationDto>()
-                {
-                    new OpenReferralServiceAtLocationDto(
-                        Guid.NewGuid().ToString(),
-                        new OpenReferralLocationDto(
-                            Guid.NewGuid().ToString(),
-                            "Our Location",
-                            "",
-                            viewModel?.Latitude ?? 0.0D,
-                            viewModel?.Longtitude ?? 0.0D,
-                            GetAddress()
+            })
+            .WithServiceAtLocations(GetServiceAtLocation(viewModel))
+            .WithServiceTaxonomies(await GetOpenReferralTaxonomies(viewModel?.TaxonomySelection))
+            .Build();
 
-                            //new List<OpenReferralPhysicalAddressDto>()
-                            //new List<OpenReferralPhysicalAddressDto>()
-                            //{
-                            //    new OpenReferralPhysicalAddressDto(
-                            //        Guid.NewGuid().ToString(),
-                            //        viewModel?.Address_1 ?? string.Empty,
-                            //        viewModel?.City ?? string.Empty,
-                            //        viewModel?.Postal_code ?? string.Empty,
-                            //        "England",
-                            //        viewModel?.State_province ?? string.Empty
-                            //        )
-                            //}
-                        ))
-                }
-                , await GetOpenReferralTaxonomies(viewModel?.TaxonomySelection)
-                )
-            });
-
-        return organisation;
+        return service;
     }
 
-    private static System.Collections.Generic.ICollection<FamilyHubs.ServiceDirectory.Shared.Models.Api.OpenReferralPhysicalAddresses.IOpenReferralPhysicalAddressDto>? GetAddress()
+    private static List<IOpenReferralServiceAtLocationDto> GetServiceAtLocation(OrganisationViewModel viewModel)
     {
-        return new List<IOpenReferralPhysicalAddressDto>();
+        
+
+        List<IOpenReferralPhysicalAddressDto> address = new()
+        {
+            new OpenReferralPhysicalAddressDto(
+                Guid.NewGuid().ToString(),
+                viewModel?.Address_1 ?? string.Empty,
+                viewModel?.City ?? string.Empty,
+                viewModel?.Postal_code ?? string.Empty,
+                "England",
+                viewModel?.State_province ?? string.Empty)
+        };
+
+        IOpenReferralLocationDto location = new OpenReferralLocationDto(
+            Guid.NewGuid().ToString(),
+            "Our Location",
+            "",
+            viewModel?.Latitude ?? 0.0D,
+            viewModel?.Longtitude ?? 0.0D,
+            address);
+
+        List<IOpenReferralServiceAtLocationDto> list = new()
+        {
+            new OpenReferralServiceAtLocationDto(Guid.NewGuid().ToString(), location)
+        };
+
+        return list;
     }
+
     private static List<IOpenReferralCostOptionDto> GetCost(bool isPayedFor, string payUnit, decimal? cost)
     {
         List<IOpenReferralCostOptionDto> list = new();
